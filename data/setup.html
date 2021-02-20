@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ustawienia</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+	  <section>WiFi: <span id="wifi_status">-</span></section>
+	  <section>MQTT: <span id="mqtt_status">-</span></section>
+  </nav>
+  <main>
+  <h1>Ustawienia WiFi</h1>
+  <form>
+    <label>SSID:</label>
+    <input type="text" id="ssid" name="ssid" placeholder="ssid">
+    <label>Hasło:</label>
+    <input type="password" id="pass" name="pass" placeholder="hasło">
+    <input type="button" id="savebtn" value="Zapisz">
+  </form>
+  <div id="loader"></div>
+  <h2 id="result"></h2>
+  </main>
+<script src="script.js"></script>
+</body>
