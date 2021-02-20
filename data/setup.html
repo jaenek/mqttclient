@@ -11,13 +11,25 @@
 	  <section>MQTT: <span id="mqtt_status">-</span></section>
   </nav>
   <main>
-  <h1>Ustawienia WiFi</h1>
-  <form>
+  <form id="wifi_form">
+    <h1>Ustawienia WiFi</h1>
     <label>SSID:</label>
-    <input type="text" id="ssid" name="ssid" placeholder="ssid">
+    <input type="text" name="ssid" placeholder="ssid">
     <label>Hasło:</label>
-    <input type="password" id="pass" name="pass" placeholder="hasło">
-    <input type="button" id="savebtn" value="Zapisz">
+    <input type="password" name="pass" placeholder="hasło">
+    <input type="button" id="submit_wifi" value="Zapisz">
+  </form>
+  <form id="mqtt_form">
+    <h1>Ustawienia MQTT</h1>
+    <label>Url:</label>
+    <input type="text" name="url" placeholder="mqtt.server.org">
+    <label>Port:</label>
+    <input type="text" name="port" placeholder="1883">
+    <label>Topic:</label>
+    <input type="text" name="topic" placeholder="outdoor/temp">
+    <label>Sensor:</label>
+    <input type="select" name="sensor">
+    <input type="button" id="submit_mqtt" value="Zapisz">
   </form>
   <div id="loader"></div>
   <h2 id="result"></h2>

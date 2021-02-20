@@ -48,7 +48,8 @@ public:
 		server.begin();
 
 		server.on("/setup",        HTTP_GET,  [this]{ serve_file("/setup.html"); });
-		server.on("/setup",        HTTP_POST, [this]{ setup_wifi(); });
+		server.on("/wifi_setup",   HTTP_POST, [this]{ setup_wifi(); });
+		server.on("/mqtt_setup",   HTTP_POST, [this]{ setup_mqtt(); });
 		server.on("/wifi_status",  HTTP_GET,  [this]{ wifi_status(); });
 		server.on("/mqtt_status",  HTTP_GET,  [this]{ mqtt_status(); });
 		server.on("/gen_204",      HTTP_GET,  [this]{ redirect("/setup"); });
@@ -124,6 +125,10 @@ public:
 		file.close();
 
 		WiFi.begin(ssid, pass);
+	}
+
+	void setup_mqtt() {
+		server.send(400, "text/plain", "TODO: Narazie nieobsługiwane!");
 	}
 
 	void wifi_status() {

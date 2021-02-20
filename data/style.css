@@ -25,13 +25,22 @@ main {
 
 form {
 	display: grid;
-	grid-template-columns: 50px 175px;
-	grid-gap: 10px;
+	grid-template-columns: 50px 200px;
+	grid-gap: 15px;
+}
+
+form h1 {
+	grid-column: 1 / span 2;
+	text-align: center;
 }
 
 label {
 	line-height: 40px;
 	text-align: right;
+}
+
+#mqtt_form {
+	display: none;
 }
 
 input[type=button] {
