@@ -7,21 +7,21 @@ all: compile upload terminal
 
 clean:
 	@echo cleaning
-	-rm -r build/ releases/common/data.bin
+	-rm -r build/ binaires/data.bin
 
 compile:
 	@arduino-cli compile -b $(FQBN)$(BPRP)
 
-mkfs:
-	@mkdir -pv releases/common
-	@../tools/mklittlefs/mklittlefs -p 256 -b 8192 -s 1044464 -c data/ releases/common/data.bin
+binaires/data.bin: data
+	@mkdir -pv binaires
+	@../tools/mklittlefs/mklittlefs -p 256 -b 8192 -s 1044464 -c $^ $@
 
-upload: mkfs
+upload: binaires/data.bin
 	@arduino-cli upload -b $(FQBN)$(BRPR) -p $(PORT)
-	@esptool.py --chip esp8266 --port $(PORT) --baud 115200 write_flash 0x200000 releases/common/data.bin
+	@esptool.py --chip esp8266 --port $(PORT) --baud 115200 write_flash 0x200000 $^
 
-uploaddata: mkfs
-	@esptool.py --chip esp8266 --port $(PORT) --baud 115200 write_flash 0x200000 releases/common/data.bin
+uploaddata: binaires/data.bin
+	@esptool.py --chip esp8266 --port $(PORT) --baud 115200 write_flash 0x200000 $^
 
 terminal:
 	@stty -F $(PORT) $(BAUD)
