@@ -13,7 +13,7 @@ function get_status() {
 
 setInterval(get_status, 5000);
 
-function submit(view) {
+function submit(url, form) {
 	loader.style.display = 'block';
 
 	var init = {
@@ -21,26 +21,48 @@ function submit(view) {
 		body: new URLSearchParams(new FormData(form))
 	};
 
-	fetch('/' + view + '_setup', init).then(res => res.text()).then(text => {
+	fetch(url, init).then(res => res.text()).then(text => {
 		loader.style.display = 'none';
 		result.innerHTML = text;
 	});
 }
 
-var form = document.getElementById('wifi_form');
+const wifi_form = document.getElementById('wifi_form');
+const mqtt_form = document.getElementById('mqtt_form');
+const topic_form = document.getElementById('topic_form');
 const submit_wifi = document.getElementById('submit_wifi');
 const submit_mqtt = document.getElementById('submit_mqtt');
+const submit_topic = document.getElementById('submit_topic');
 const loader = document.getElementById('loader');
 const result = document.getElementById('result');
 
 function set_view(view) {
-	form.style.display = 'none';
-	form = document.getElementById(view + '_form');
-	form.style.display = 'grid';
+	if (view == 'wifi') {
+		mqtt_form.style.display = 'none';
+		topic_form.style.display = 'none';
+		wifi_form.style.display = 'grid';
+	} else if (view == 'mqtt') {
+		wifi_form.style.display = 'none';
+		mqtt_form.style.display = 'grid';
+		topic_form.style.display = 'grid';
+	}
 }
 
 wifi_status.parentNode.onclick = function() { set_view('wifi') };
 mqtt_status.parentNode.onclick = function() { set_view('mqtt') };
-submit_wifi.onclick = function() { submit('wifi') };
-submit_mqtt.onclick = function() { submit('mqtt') };
-set_view('wifi');
+submit_wifi.onclick = function() { submit('/wifi_setup', wifi_form) };
+submit_mqtt.onclick = function() { submit('/mqtt_setup', mqtt_form) };
+submit_topic.onclick = function() { submit('/topic_setup', topic_form) };
+
+set_view('mqtt');
+
+const sensors = document.getElementById('sensors');
+
+fetch('/sensors').then(res => res.text()).then(body => {
+	var options;
+	var lines = body.split('\n');
+	lines.forEach(item => {
+		options	+= '<option name="' + item + '">' + item + '</option>\n';
+	});
+	sensors.innerHTML = options;
+});

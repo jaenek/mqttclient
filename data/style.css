@@ -29,9 +29,8 @@ form {
 	grid-gap: 15px;
 }
 
-form h1 {
+form h2, form h3 {
 	grid-column: 1 / span 2;
-	text-align: center;
 }
 
 label {
@@ -44,7 +43,6 @@ label {
 }
 
 input[type=button] {
-	width: 100px;
 	grid-column: 2;
 	margin-left: auto;
 }

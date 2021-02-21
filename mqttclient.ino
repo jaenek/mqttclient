@@ -6,33 +6,7 @@
 #include <PubSubClient.h>
 #include <Wire.h>
 
-#include "BME280I2C.h"
-
-BME280I2C bme;
-
-class Sensor {
-public:
-	void begin() {
-		while (!bme.begin()) {
-			Serial.println("BME280 not found!");
-			delay(1000);
-		}
-
-	}
-
-	void update() {
-		bme.read(pressure, temperature, humidity, temp_unit, pressure_unit);
-	}
-
-	void send() {
-		Serial.printf("BME:\n\tTemperature: %.2f\tHumidity: %.2f%% RH\tPressure: %.2fHPa\n", temperature, humidity, pressure/100);
-	}
-
-private:
-	float temperature, humidity, pressure;
-	BME280::TempUnit temp_unit{BME280::TempUnit_Celsius};
-	BME280::PresUnit pressure_unit{BME280::PresUnit_Pa};
-};
+#include "sensor.h"
 
 class MQTTClient : PubSubClient {
 public:
@@ -50,6 +24,7 @@ public:
 		server.on("/setup",        HTTP_GET,  [this]{ serve_file("/setup.html"); });
 		server.on("/wifi_setup",   HTTP_POST, [this]{ setup_wifi(); });
 		server.on("/mqtt_setup",   HTTP_POST, [this]{ setup_mqtt(); });
+		server.on("/topic_setup",  HTTP_POST, [this]{ setup_topic(); });
 		server.on("/wifi_status",  HTTP_GET,  [this]{ wifi_status(); });
 		server.on("/mqtt_status",  HTTP_GET,  [this]{ mqtt_status(); });
 		server.on("/gen_204",      HTTP_GET,  [this]{ redirect("/setup"); });
@@ -97,8 +72,9 @@ public:
 		else if (filepath.endsWith(".css")) mime = "text/css";
 		else if (filepath.endsWith(".js")) mime = "text/javascript";
 		else if (filepath.endsWith(".ttf")) mime = "font/ttf";
+		else mime = "text/plain";
 
-		if (LittleFS.exists(filepath) && mime != "") {
+		if (LittleFS.exists(filepath)) {
 			File file = LittleFS.open(filepath, "r");
 			server.streamFile(file, mime);
 			file.close();
@@ -131,6 +107,10 @@ public:
 		server.send(400, "text/plain", "TODO: Narazie nieobsługiwane!");
 	}
 
+	void setup_topic() {
+		server.send(400, "text/plain", "TODO: Narazie nieobsługiwane!");
+	}
+
 	void wifi_status() {
 		server.send(200, "text/plain", WiFi.status() == WL_CONNECTED ? status_ok : status_bad);
 	}
@@ -147,7 +127,7 @@ public:
 	}
 
 	bool connected() {
-		return WiFi.status() != WL_CONNECTED;
+		return WiFi.status() == WL_CONNECTED;
 	}
 
 	void reconnect() {
@@ -157,9 +137,6 @@ public:
 	void loop() {
 		dnsServer.processNextRequest();
 		server.handleClient();
-
-		for (auto &s : sensors)
-			s.update();
 
 		if (!connected()) {
 			reconnect();
