@@ -1,29 +1,43 @@
+#include <map>
+#include <vector>
 #include "BME280I2C.h"
 
-BME280I2C bme;
+
+static auto min_to_ms = [](int t) { return (t < 0) ? 0 : t*60000; };
+
+struct Reading {
+	String topic = "";
+	uint32_t interval = min_to_ms(3);
+	uint32_t last_reading = 0;
+	float value = 0.0f;
+};
 
 class Sensor {
 public:
-	void begin() {
+	virtual void begin() {}
+	virtual float update(const String&) {}
 
-		/*while (!bme.begin()) {
-			Serial.println("BME280 not found!");
-			delay(1000);
-		}*/
-
+	void set_available_readings(std::vector<String> reading_names) {
+		for (auto& name : reading_names)
+			readings[name] = Reading{};
 	}
 
-	void update() {
-		bme.read(pressure, temperature, humidity, temp_unit, pressure_unit);
+	std::vector<String> get_reading_names() {
+		std::vector<String> names;
+		for (auto& pair : readings) {
+			names.push_back(pair.first);
+			Serial.println(pair.first);
+		}
+		return names;
 	}
 
-	void send() {
-		Serial.printf("BME:\n\tTemperature: %.2f\tHumidity: %.2f%% RH\tPressure: %.2fHPa\n", temperature, humidity, pressure/100);
+	void update_readings() {
+		for (auto& pair : readings) {
+			if (millis() - pair.second.last_reading > pair.second.interval)
+				pair.second.value = update(pair.first);
+		}
 	}
 
 private:
-	float temperature, humidity, pressure;
-	BME280::TempUnit temp_unit{BME280::TempUnit_Celsius};
-	BME280::PresUnit pressure_unit{BME280::PresUnit_Pa};
+	std::map<String, Reading> readings;
 };
-

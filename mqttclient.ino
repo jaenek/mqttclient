@@ -1,7 +1,7 @@
 #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 #include <FS.h>
 #include <DNSServer.h>
-#include <ESP8266WebServer.h>
 #include <LittleFS.h>
 #include <PubSubClient.h>
 #include <Wire.h>
@@ -11,7 +11,7 @@
 
 class MQTTClient : PubSubClient {
 public:
-	std::vector<Sensor> sensors;
+	std::vector<Sensor*> sensors;
 
 	MQTTClient(String ap_ssid, String ap_password) : ap_ssid(ap_ssid), ap_password(ap_password) {}
 
@@ -33,6 +33,7 @@ public:
 		server.on("/topic_setup",  HTTP_POST, [this]{ setup_topic(); });
 		server.on("/wifi_status",  HTTP_GET,  [this]{ wifi_status(); });
 		server.on("/mqtt_status",  HTTP_GET,  [this]{ mqtt_status(); });
+		server.on("/readings",     HTTP_GET,  [this]{ get_all_reading_names(); });
 		server.on("/gen_204",      HTTP_GET,  [this]{ redirect("/setup"); });
 		server.on("/generate_204", HTTP_GET,  [this]{ redirect("/setup"); });
 		server.on("/success.txt",  HTTP_GET,  [this]{ redirect("/setup"); });
@@ -46,8 +47,8 @@ public:
 			Serial.println("Warning: Waiting for wifi credentials under 172.0.0.1/setup");
 		}
 
-		for (auto &s : sensors)
-			s.begin();
+		for (auto &sensor : sensors)
+			sensor->begin();
 	}
 
 	void serve_file(String filepath) {
@@ -98,6 +99,16 @@ public:
 		server.send(200, "text/plain", status_bad);
 	}
 
+	void get_all_reading_names() {
+		String reading_names;
+		for (auto& sensor : sensors) {
+			for (auto& name : sensor->get_reading_names()) {
+				reading_names += name + '\n';
+			}
+		}
+		server.send(200, "text/plain", reading_names);
+	}
+
 	void redirect(String path) {
 		server.sendHeader("Location", path, true);
 		server.send(302, "text/plain", "");
@@ -119,8 +130,7 @@ public:
 		if (!connected()) {
 			reconnect();
 		} else {
-			for (auto &s : sensors)
-				s.update();
+			// publish sensor values
 		}
 
 	}
@@ -140,6 +150,33 @@ private:
 	Config config;
 } client("Czujnik", "password123");
 
+class BME : public Sensor {
+	void begin() override {
+		while (!bme.begin()) {
+			Serial.println("BME280 not found!");
+			delay(1000);
+		}
+
+		set_available_readings({"bme_temp", "bme_hum", "bme_pres"});
+	}
+
+	float update(const String& reading_name) override {
+		if (reading_name == "bme_temp")
+			return bme.temp(temperature_unit);
+		else if (reading_name == "bme_hum")
+			return bme.hum();
+		else if (reading_name == "bme_pres")
+			return bme.pres(pressure_unit);
+		else
+			Serial.printf("Error: Unknown %s reading name.\n", reading_name.c_str());
+		return 0.0f;
+	}
+
+	BME280I2C bme;
+	BME280::TempUnit temperature_unit{BME280::TempUnit_Celsius};
+	BME280::PresUnit pressure_unit{BME280::PresUnit_Pa};
+};
+
 void setup() {
 	Serial.begin(9600);
 	while (!Serial);
@@ -148,7 +185,7 @@ void setup() {
 
 	Wire.begin();
 
-	client.sensors.emplace_back();
+	client.sensors.push_back(new BME());
 
 	client.begin();
 }
