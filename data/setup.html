@@ -26,21 +26,21 @@
     <input type="url" name="url" placeholder="adres lub ip">
     <label>Port:</label>
     <input type="number" name="port" value="1883">
+    <label>Login:</label>
+    <input type="text" name="username">
+    <label>Hasło:</label>
+    <input type="text" name="password">
     <input type="button" id="submit_mqtt" value="Zapisz">
   </form>
   <form id="topic_form">
     <h3>Czujnik:</h3>
     <label>Odczyt:</label>
-    <select name="sensor" id="sensors">
+    <select name="reading" id="readings">
     </select>
     <label>Interwał:</label>
     <input type="number" name="interval" placeholder="(w minutach)">
     <label>Topic:</label>
     <input type="text" name="topic">
-    <label>Login:</label>
-    <input type="text" name="username">
-    <label>Hasło:</label>
-    <input type="text" name="password">
     <input type="button" id="submit_topic" value="Zapisz">
   </form>
   <div id="loader"></div>

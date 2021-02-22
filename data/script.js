@@ -56,13 +56,13 @@ submit_topic.onclick = function() { submit('/topic_setup', topic_form) };
 
 set_view('mqtt');
 
-const sensors = document.getElementById('sensors');
+const readings = document.getElementById('readings');
 
-fetch('/sensors').then(res => res.text()).then(body => {
+fetch('/readings').then(res => res.text()).then(body => {
 	var options;
 	var lines = body.split('\n');
 	lines.forEach(item => {
 		options	+= '<option name="' + item + '">' + item + '</option>\n';
 	});
-	sensors.innerHTML = options;
+	readings.innerHTML = options;
 });
