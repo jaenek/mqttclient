@@ -14,27 +14,33 @@
   <form id="wifi_form">
     <h2>Ustawienia WiFi</h2>
     <label>SSID:</label>
-    <input type="text" name="ssid" placeholder="ssid">
+    <input type="text" name="ssid">
     <label>Hasło:</label>
-    <input type="password" name="pass" placeholder="hasło">
+    <input type="password" name="password">
     <input type="button" id="submit_wifi" value="Zapisz">
   </form>
   <form id="mqtt_form">
     <h2>Ustawienia MQTT</h2>
     <h3>Serwer:</h3>
     <label>Url:</label>
-    <input type="url" name="url" placeholder="mqtt.server.org">
+    <input type="url" name="url" placeholder="adres lub ip">
     <label>Port:</label>
-    <input type="number" name="port" placeholder="1883">
+    <input type="number" name="port" value="1883">
     <input type="button" id="submit_mqtt" value="Zapisz">
   </form>
   <form id="topic_form">
     <h3>Czujnik:</h3>
-    <label>Topic:</label>
-    <input type="text" name="topic" placeholder="outdoor/temp">
     <label>Odczyt:</label>
     <select name="sensor" id="sensors">
     </select>
+    <label>Interwał:</label>
+    <input type="number" name="interval" placeholder="(w minutach)">
+    <label>Topic:</label>
+    <input type="text" name="topic">
+    <label>Login:</label>
+    <input type="text" name="username">
+    <label>Hasło:</label>
+    <input type="text" name="password">
     <input type="button" id="submit_topic" value="Zapisz">
   </form>
   <div id="loader"></div>

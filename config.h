@@ -17,35 +17,35 @@ public:
 		return true;
 	}
 
-	void save_wifi_config(String ssid, String pass) {
+	void save_wifi_config(String ssid, String password) {
 		File file = LittleFS.open(wifi_config, "w");
-		write_to_file(file, ssid, pass);
+		write_to_file(file, ssid, password);
 		file.close();
 	}
 
-	bool load_wifi_config(String& ssid, String& pass) {
+	bool load_wifi_config(String& ssid, String& password) {
 		if (!LittleFS.exists(wifi_config))
 			return false;
 
 		File file = LittleFS.open(wifi_config, "r");
-		read_from_file(file, ssid, pass);
+		read_from_file(file, ssid, password);
 		file.close();
 		return true;
 	}
 
-	void save_sensor_config(String sensor_config, String name, int interval, String topic, String pass = "") {
+	void save_sensor_config(String sensor_config, String name, int interval, String topic, String password = "") {
 		File file = LittleFS.open(sensor_config, "w");
-		write_to_file(file, name, String(interval), topic, pass);
+		write_to_file(file, name, String(interval), topic, password);
 		file.close();
 	}
 
-	bool load_sensor_config(String sensor_config, String& name, int& interval, String& topic, String& pass) {
+	bool load_sensor_config(String sensor_config, String& name, int& interval, String& topic, String& password) {
 		if (!LittleFS.exists(sensor_config))
 			return false;
 
 		File file = LittleFS.open(sensor_config, "r");
 		String tmp;
-		read_from_file(file, name, tmp, topic, pass);
+		read_from_file(file, name, tmp, topic, password);
 		interval = tmp.toInt();
 		file.close();
 		return true;

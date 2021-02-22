@@ -13,10 +13,12 @@ class MQTTClient : PubSubClient {
 public:
 	std::vector<Sensor> sensors;
 
+	MQTTClient(String ap_ssid, String ap_password) : ap_ssid(ap_ssid), ap_password(ap_password) {}
+
 	void begin() {
 		WiFi.mode(WIFI_AP_STA);
 		WiFi.softAPConfig(APIP, APIP, IPAddress(255, 255, 255, 0));
-		WiFi.softAP(ap_ssid, ap_pass);
+		WiFi.softAP(ap_ssid, ap_password);
 
 		Serial.print("AP IP address: ");
 		Serial.println(APIP);
@@ -36,10 +38,10 @@ public:
 		server.on("/success.txt",  HTTP_GET,  [this]{ redirect("/setup"); });
 		server.onNotFound([this]{ serve_file(server.uri()); });
 
-		String ssid, pass;
-		if (config.load_wifi_config(ssid, pass)) {
+		String ssid, password;
+		if (config.load_wifi_config(ssid, password)) {
 			Serial.println("Connecting to WiFi");
-			WiFi.begin(ssid, pass);
+			WiFi.begin(ssid, password);
 		} else {
 			Serial.println("Warning: Waiting for wifi credentials under 172.0.0.1/setup");
 		}
@@ -67,18 +69,16 @@ public:
 	}
 
 	void setup_wifi() {
-		String ssid = server.arg("ssid"), pass = server.arg("pass");
+		String ssid = server.arg("ssid"), password = server.arg("password");
 
-		Serial.println("ssid: " + ssid + "\tpass: " + pass);
-
-		if (ssid != "" && pass != "")
+		if (ssid != "" && password != "")
 			server.send(200, "text/plain", "");
 		else
 			server.send(400, "text/plain", "Wszystkie pola muszą być wypełnione!");
 
-		config.save_wifi_config(ssid, pass);
+		config.save_wifi_config(ssid, password);
 
-		WiFi.begin(ssid, pass);
+		WiFi.begin(ssid, password);
 	}
 
 	void setup_mqtt() {
@@ -127,8 +127,8 @@ public:
 private:
 	IPAddress APIP{172, 0, 0, 1};
 
-	const String ap_ssid = "CzujnikTemp";
-	const String ap_pass = "password123";
+	const String ap_ssid;
+	const String ap_password;
 	const String status_ok = "Ok!";
 	const String status_bad = "Błąd!";
 
@@ -138,7 +138,7 @@ private:
 	ESP8266WebServer server{80};
 
 	Config config;
-} client;
+} client("Czujnik", "password123");
 
 void setup() {
 	Serial.begin(9600);
