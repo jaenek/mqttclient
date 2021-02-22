@@ -18,6 +18,9 @@ public:
 		WiFi.softAPConfig(APIP, APIP, IPAddress(255, 255, 255, 0));
 		WiFi.softAP(ap_ssid, ap_pass);
 
+		Serial.print("AP IP address: ");
+		Serial.println(APIP);
+
 		dnsServer.start(53, "*", APIP);
 
 		server.begin();
@@ -33,17 +36,10 @@ public:
 		server.on("/success.txt",  HTTP_GET,  [this]{ redirect("/setup"); });
 		server.onNotFound([this]{ serve_file(server.uri()); });
 
-		Serial.print("AP IP address: ");
-		Serial.println(APIP);
-
-		if (LittleFS.exists(wifi_config)) {
+		String ssid, pass;
+		if (config.load_wifi_config(ssid, pass)) {
 			Serial.println("Connecting to WiFi");
-			String ssid, pass, interval;
-
-			config.load_wifi_config(ssid, pass);
-
 			WiFi.begin(ssid, pass);
-			update_interval = interval.toInt();
 		} else {
 			Serial.println("Warning: Waiting for wifi credentials under 172.0.0.1/setup");
 		}
@@ -53,12 +49,11 @@ public:
 	}
 
 	void serve_file(String filepath) {
-		String mime = "";
+		String mime = "text/plain";
 		if (filepath.endsWith(".html")) mime = "text/html";
 		else if (filepath.endsWith(".css")) mime = "text/css";
 		else if (filepath.endsWith(".js")) mime = "text/javascript";
 		else if (filepath.endsWith(".ttf")) mime = "font/ttf";
-		else mime = "text/plain";
 
 		if (LittleFS.exists(filepath)) {
 			File file = LittleFS.open(filepath, "r");
@@ -132,8 +127,6 @@ public:
 private:
 	IPAddress APIP{172, 0, 0, 1};
 
-	const String wifi_config = "/wifi_config";
-	const String mqtt_config = "/mqtt_config";
 	const String ap_ssid = "CzujnikTemp";
 	const String ap_pass = "password123";
 	const String status_ok = "Ok!";

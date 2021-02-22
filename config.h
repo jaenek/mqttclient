@@ -7,10 +7,14 @@ public:
 		file.close();
 	}
 
-	void load_mqtt_config(String& url, String& port) {
+	bool load_mqtt_config(String& url, String& port) {
+		if (!LittleFS.exists(mqtt_config))
+			return false;
+
 		File file = LittleFS.open(mqtt_config, "r");
 		read_from_file(file, url, port);
 		file.close();
+		return true;
 	}
 
 	void save_wifi_config(String ssid, String pass) {
@@ -19,28 +23,37 @@ public:
 		file.close();
 	}
 
-	void load_wifi_config(String& ssid, String& pass) {
+	bool load_wifi_config(String& ssid, String& pass) {
+		if (!LittleFS.exists(wifi_config))
+			return false;
+
 		File file = LittleFS.open(wifi_config, "r");
 		read_from_file(file, ssid, pass);
 		file.close();
+		return true;
 	}
 
-	void save_sensor_config(String name, String topic, String pass = "") {
-		File file = LittleFS.open(wifi_config, "w");
-		write_to_file(file, name, topic, pass);
+	void save_sensor_config(String sensor_config, String name, int interval, String topic, String pass = "") {
+		File file = LittleFS.open(sensor_config, "w");
+		write_to_file(file, name, String(interval), topic, pass);
 		file.close();
 	}
 
-	void load_sensor_config(String& name, String& topic, String& pass) {
-		File file = LittleFS.open(wifi_config, "r");
-		read_from_file(file, name, topic, pass);
+	bool load_sensor_config(String sensor_config, String& name, int& interval, String& topic, String& pass) {
+		if (!LittleFS.exists(sensor_config))
+			return false;
+
+		File file = LittleFS.open(sensor_config, "r");
+		String tmp;
+		read_from_file(file, name, tmp, topic, pass);
+		interval = tmp.toInt();
 		file.close();
+		return true;
 	}
 
 private:
 	const String wifi_config = "/wifi_config";
 	const String mqtt_config = "/mqtt_config";
-	std::vector<String> sensor_configs;
 
 	void write_to_file(File file) {}
 
