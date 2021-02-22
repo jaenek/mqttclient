@@ -6,6 +6,7 @@
 #include <PubSubClient.h>
 #include <Wire.h>
 
+#include "config.h"
 #include "sensor.h"
 
 class MQTTClient : PubSubClient {
@@ -39,22 +40,7 @@ public:
 			Serial.println("Connecting to WiFi");
 			String ssid, pass, interval;
 
-			int line = 0;
-			File file = LittleFS.open(wifi_config, "r");
-			while (file.available()) {
-				char c = char(file.read());
-				if (c == '\n') {
-					line++;
-					continue;
-				}
-
-				switch(line) {
-				case 0: ssid += c; break;
-				case 1: pass += c; break;
-				default: break;
-				}
-			}
-			file.close();
+			config.load_wifi_config(ssid, pass);
 
 			WiFi.begin(ssid, pass);
 			update_interval = interval.toInt();
@@ -95,10 +81,7 @@ public:
 		else
 			server.send(400, "text/plain", "Wszystkie pola muszą być wypełnione!");
 
-
-		File file = LittleFS.open(wifi_config, "w");
-		file.print(ssid + '\n' + pass + '\n' );
-		file.close();
+		config.save_wifi_config(ssid, pass);
 
 		WiFi.begin(ssid, pass);
 	}
@@ -161,6 +144,7 @@ private:
 	DNSServer dnsServer;
 	ESP8266WebServer server{80};
 
+	Config config;
 } client;
 
 void setup() {
