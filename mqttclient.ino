@@ -6,8 +6,8 @@
 #include <PubSubClient.h>
 #include <Wire.h>
 
-#include "config.h"
 #include "sensor.h"
+#include "config.h"
 
 class MQTTClient : PubSubClient {
 public:
@@ -43,12 +43,40 @@ public:
 		if (config.load_wifi_config(ssid, password)) {
 			Serial.println("Connecting to WiFi");
 			WiFi.begin(ssid, password);
+			config.load_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password);
+			mqtt_connect();
 		} else {
 			Serial.println("Warning: Waiting for wifi credentials under 172.0.0.1/setup");
 		}
 
-		for (auto &sensor : sensors)
+		for (auto& sensor : sensors)
 			sensor->begin();
+
+		for (auto& sensor : sensors) {
+			for (auto& name : sensor->get_available_readings()) {
+				if (config.load_sensor_config(name, sensor->readings[name].topic, sensor->readings[name].interval))
+					Serial.printf("%s read successfuly\n", name.c_str());
+			}
+		}
+	}
+
+	bool mqtt_connect() {
+		if (connected())
+			return true;
+
+		IPAddress ip;
+
+		if (ip.fromString(mqtt_host.c_str()))
+			setServer(ip, mqtt_port.toInt());
+		else
+			setServer(mqtt_host.c_str(), mqtt_port.toInt());
+
+		setClient(wifi_client);
+
+		if (mqtt_username != "" && mqtt_password != "")
+			return connect("Czujnik", mqtt_username.c_str(), mqtt_password.c_str());
+		else
+			return connect("Czujnik");
 	}
 
 	void serve_file(String filepath) {
@@ -83,25 +111,13 @@ public:
 	}
 
 	void setup_mqtt() {
-		String host = server.arg("host"), port = server.arg("port"),
-			username = server.arg("username"), password = server.arg("password");
+		mqtt_host = server.arg("host");
+		mqtt_port = server.arg("port"),
+		mqtt_username = server.arg("username");
+		mqtt_password = server.arg("password");
 
-		IPAddress ip;
-
-		if (ip.fromString(host.c_str()))
-			setServer(ip, port.toInt());
-		else
-			setServer(host.c_str(), port.toInt());
-
-		setClient(wifi_client);
-
-		if (username != "" && password != "")
-			connection_established = connect("Czujnik", username.c_str(), password.c_str());
-		else
-			connection_established = connect("Czujnik");
-
-		if (connection_established) {
-			config.save_mqtt_config(host, port, username, password);
+		if (mqtt_connect()) {
+			config.save_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password);
 			server.send(200, "text/plain", "");
 		} else {
 			server.send(500, "text/plain", "Błąd konfiguracji serwera!");
@@ -114,12 +130,12 @@ public:
 			auto needle = sensor->readings.find(reading);
 			if (needle != sensor->readings.end()) {
 				String topic = server.arg("topic");
-				String interval = server.arg("interval");
+				uint32_t interval = min_to_ms(server.arg("interval").toInt());
 
 				needle->second.topic = topic;
-				needle->second.interval = min_to_ms(interval.toInt());
+				needle->second.interval = interval;
 
-				config.save_sensor_config("reading/"+reading, topic, interval);
+				config.save_sensor_config(reading, topic, interval);
 
 				Serial.printf("%s\t%i\n", needle->second.topic.c_str(), needle->second.interval);
 				server.send(200, "text/plain", "");
@@ -134,13 +150,13 @@ public:
 	}
 
 	void mqtt_status() {
-		server.send(200, "text/plain", connection_established ? status_ok : status_bad);
+		server.send(200, "text/plain", connected() ? status_ok : status_bad);
 	}
 
 	void get_all_reading_names() {
 		String reading_names;
 		for (auto& sensor : sensors) {
-			for (auto& name : sensor->get_reading_names()) {
+			for (auto& name : sensor->get_available_readings()) {
 				reading_names += name + '\n';
 			}
 		}
@@ -156,6 +172,15 @@ public:
 	void loop() {
 		dnsServer.processNextRequest();
 		server.handleClient();
+
+		if (millis() - 5000 > last && mqtt_connect()) {
+			for (auto& sensor : sensors) {
+				auto readings = sensor->get_readings_to_send();
+				for (auto& reading : readings)
+					publish(reading->second.topic.c_str(), String(sensor->update(reading->first)).c_str());
+			}
+			last = millis();
+		}
 	}
 private:
 	IPAddress APIP{172, 0, 0, 1};
@@ -166,7 +191,12 @@ private:
 	const String status_ok = "Ok!";
 	const String status_bad = "Błąd!";
 
-	bool connection_established = false;
+	String mqtt_host;
+	String mqtt_port;
+	String mqtt_username;
+	String mqtt_password;
+
+	uint32_t last = 0;
 
 	DNSServer dnsServer;
 	ESP8266WebServer server{80};

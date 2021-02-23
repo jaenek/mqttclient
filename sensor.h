@@ -4,13 +4,12 @@
 
 
 static auto min_to_ms = [](int t) { return (t < 0) ? 0 : t*60000; };
-static auto ms_to_min = [](uint32_t t) { return t/60000; };
+static auto ms_to_min = [](int t) { return t/60000; };
 
 struct Reading {
 	String topic = "";
 	uint32_t interval = min_to_ms(3);
 	uint32_t last_reading = 0;
-	float value = 0.0f;
 };
 
 struct Sensor {
@@ -22,20 +21,25 @@ struct Sensor {
 			readings[name] = Reading{};
 	}
 
-	std::vector<String> get_reading_names() {
+	std::vector<String> get_available_readings() {
 		std::vector<String> names;
 		for (auto& pair : readings) {
 			names.push_back(pair.first);
-			Serial.println(pair.first);
 		}
 		return names;
 	}
 
-	void update_readings() {
+	std::vector<std::pair<const String, Reading>*> get_readings_to_send() {
+		std::vector<std::pair<const String, Reading>*> readings_to_send;
 		for (auto& pair : readings) {
-			if (millis() - pair.second.last_reading > pair.second.interval)
-				pair.second.value = update(pair.first);
+			auto& reading = pair.second;
+			Serial.println(String(millis() - reading.last_reading) + " > " + String(reading.interval));
+			if (reading.topic != "" && millis() - reading.last_reading > reading.interval) {
+				readings_to_send.push_back(&pair);
+				reading.last_reading = millis();
+			}
 		}
+		return readings_to_send;
 	}
 
 	std::map<String, Reading> readings;

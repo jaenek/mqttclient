@@ -1,5 +1,5 @@
 FQBN ?= esp8266:esp8266:d1_mini
-BPRP ?= :wipe=all
+BPRP ?=
 PORT ?= /dev/ttyUSB0
 BAUD ?= 9600
 
