@@ -33,19 +33,19 @@ public:
 		return true;
 	}
 
-	void save_sensor_config(String sensor_config, int interval, String topic) {
+	void save_sensor_config(String sensor_config, String topic, String interval) {
 		File file = LittleFS.open(sensor_config, "w");
-		write_to_file(file, String(interval), topic);
+		write_to_file(file, topic, interval);
 		file.close();
 	}
 
-	bool load_sensor_config(String sensor_config, int& interval, String& topic) {
+	bool load_sensor_config(String sensor_config, String& topic, int& interval) {
 		if (!LittleFS.exists(sensor_config))
 			return false;
 
 		File file = LittleFS.open(sensor_config, "r");
 		String tmp;
-		read_from_file(file, tmp, topic);
+		read_from_file(file, topic, tmp);
 		interval = tmp.toInt();
 		file.close();
 		return true;

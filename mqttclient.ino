@@ -109,7 +109,24 @@ public:
 	}
 
 	void setup_topic() {
-		server.send(400, "text/plain", "TODO: Narazie nieobsługiwane!");
+		for (auto& sensor : sensors) {
+			String reading = server.arg("reading");
+			auto needle = sensor->readings.find(reading);
+			if (needle != sensor->readings.end()) {
+				String topic = server.arg("topic");
+				String interval = server.arg("interval");
+
+				needle->second.topic = topic;
+				needle->second.interval = min_to_ms(interval.toInt());
+
+				config.save_sensor_config("reading/"+reading, topic, interval);
+
+				Serial.printf("%s\t%i\n", needle->second.topic.c_str(), needle->second.interval);
+				server.send(200, "text/plain", "");
+				return;
+			}
+		}
+		server.send(500, "text/plain", "Błąd konfiguracji odczytu!");
 	}
 
 	void wifi_status() {

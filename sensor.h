@@ -4,6 +4,7 @@
 
 
 static auto min_to_ms = [](int t) { return (t < 0) ? 0 : t*60000; };
+static auto ms_to_min = [](uint32_t t) { return t/60000; };
 
 struct Reading {
 	String topic = "";
@@ -12,8 +13,7 @@ struct Reading {
 	float value = 0.0f;
 };
 
-class Sensor {
-public:
+struct Sensor {
 	virtual void begin() {}
 	virtual float update(const String&) {}
 
@@ -38,6 +38,5 @@ public:
 		}
 	}
 
-private:
 	std::map<String, Reading> readings;
 };
