@@ -83,7 +83,29 @@ public:
 	}
 
 	void setup_mqtt() {
-		server.send(400, "text/plain", "TODO: Narazie nieobsługiwane!");
+		String host = server.arg("host"), port = server.arg("port"),
+			username = server.arg("username"), password = server.arg("password");
+
+		IPAddress ip;
+
+		if (ip.fromString(host.c_str()))
+			setServer(ip, port.toInt());
+		else
+			setServer(host.c_str(), port.toInt());
+
+		setClient(wifi_client);
+
+		if (username != "" && password != "")
+			connection_established = connect("Czujnik", username.c_str(), password.c_str());
+		else
+			connection_established = connect("Czujnik");
+
+		if (connection_established) {
+			config.save_mqtt_config(host, port, username, password);
+			server.send(200, "text/plain", "");
+		} else {
+			server.send(500, "text/plain", "Błąd konfiguracji serwera!");
+		}
 	}
 
 	void setup_topic() {
@@ -95,8 +117,7 @@ public:
 	}
 
 	void mqtt_status() {
-		//server.send(200, "text/plain", WiFi.status() != WL_CONNECTED ? status_ok : status_bad);
-		server.send(200, "text/plain", status_bad);
+		server.send(200, "text/plain", connection_established ? status_ok : status_bad);
 	}
 
 	void get_all_reading_names() {
@@ -115,37 +136,24 @@ public:
 		server.client().stop(); // Stop is needed because we sent no content length
 	}
 
-	bool connected() {
-		return WiFi.status() == WL_CONNECTED;
-	}
-
-	void reconnect() {
-
-	}
-
 	void loop() {
 		dnsServer.processNextRequest();
 		server.handleClient();
-
-		if (!connected()) {
-			reconnect();
-		} else {
-			// publish sensor values
-		}
-
 	}
 private:
 	IPAddress APIP{172, 0, 0, 1};
 
 	const String ap_ssid;
 	const String ap_password;
+
 	const String status_ok = "Ok!";
 	const String status_bad = "Błąd!";
 
-	uint32_t update_interval;
+	bool connection_established = false;
 
 	DNSServer dnsServer;
 	ESP8266WebServer server{80};
+	WiFiClient wifi_client;
 
 	Config config;
 } client("Czujnik", "password123");
