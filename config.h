@@ -1,7 +1,7 @@
 
 class Config {
 public:
-	void save_mqtt_config(String host, String port, String username, String password) {
+	void save_mqtt_config(const String& host, const String& port, const String& username, const String& password) {
 		File file = LittleFS.open(mqtt_config, "w");
 		write_to_file(file, host, port, username, password);
 		file.close();
@@ -17,7 +17,7 @@ public:
 		return true;
 	}
 
-	void save_wifi_config(String ssid, String password) {
+	void save_wifi_config(const String& ssid, const String& password) {
 		File file = LittleFS.open(wifi_config, "w");
 		write_to_file(file, ssid, password);
 		file.close();
@@ -33,20 +33,20 @@ public:
 		return true;
 	}
 
-	void save_sensor_config(String sensor_config, String topic, String interval) {
-		File file = LittleFS.open(sensor_config, "w");
-		write_to_file(file, topic, interval);
+	void save_sensor_config(const String& sensor_config, const String& topic, const uint32_t& interval) {
+		File file = LittleFS.open(sensors_config_folder+sensor_config, "w");
+		write_to_file(file, topic, String(ms_to_min(interval)));
 		file.close();
 	}
 
-	bool load_sensor_config(String sensor_config, String& topic, int& interval) {
-		if (!LittleFS.exists(sensor_config))
+	bool load_sensor_config(String sensor_config, String& topic, uint32_t& interval) {
+		if (!LittleFS.exists(sensors_config_folder+sensor_config))
 			return false;
 
-		File file = LittleFS.open(sensor_config, "r");
+		File file = LittleFS.open(sensors_config_folder+sensor_config, "r");
 		String tmp;
 		read_from_file(file, topic, tmp);
-		interval = tmp.toInt();
+		interval = min_to_ms(tmp.toInt());
 		file.close();
 		return true;
 	}
@@ -54,6 +54,7 @@ public:
 private:
 	const String wifi_config = "/wifi_config";
 	const String mqtt_config = "/mqtt_config";
+	const String sensors_config_folder = "/readings/";
 
 	void write_to_file(File file) {}
 
