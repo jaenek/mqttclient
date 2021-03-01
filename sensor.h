@@ -33,7 +33,6 @@ struct Sensor {
 		std::vector<std::pair<const String, Reading>*> readings_to_send;
 		for (auto& pair : readings) {
 			auto& reading = pair.second;
-			Serial.println(String(millis() - reading.last_reading) + " > " + String(reading.interval));
 			if (reading.topic != "" && millis() - reading.last_reading > reading.interval) {
 				readings_to_send.push_back(&pair);
 				reading.last_reading = millis();

@@ -138,7 +138,6 @@ public:
 
 				config.save_sensor_config(reading, topic, interval);
 
-				Serial.printf("%s\t%i\n", needle->second.topic.c_str(), needle->second.interval);
 				server.send(200, "text/plain", "");
 				return;
 			}
@@ -225,8 +224,6 @@ class BME : public Sensor {
 			return bme.hum();
 		else if (reading_name == "bme_pres")
 			return bme.pres(pressure_unit);
-		else
-			Serial.printf("Error: Unknown %s reading name.\n", reading_name.c_str());
 		return 0.0f;
 	}
 
