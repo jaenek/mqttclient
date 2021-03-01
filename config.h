@@ -52,14 +52,14 @@ public:
 	}
 
 private:
-	const String wifi_config = "/wifi_config";
-	const String mqtt_config = "/mqtt_config";
+	const String wifi_config = "/config/wifi_config";
+	const String mqtt_config = "/config/mqtt_config";
 	const String sensors_config_folder = "/readings/";
 
 	void write_to_file(File file) {}
 
 	template <typename ... Args>
-	void write_to_file(File file, String arg, Args ... args) {
+	void write_to_file(File file, String arg, const Args& ... args) {
 		for (int i = 0; i < arg.length(); i++)
 			file.write(arg[i]);
 		file.write('\n');
@@ -69,7 +69,7 @@ private:
 	void read_from_file(File file) {}
 
 	template <typename ... Args>
-	void read_from_file(File file, String& arg, Args ... args) {
+	void read_from_file(File file, String& arg, Args& ... args) {
 		char c = file.read();
 		while (c != '\n') {
 			arg += c;
