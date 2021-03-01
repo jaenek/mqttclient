@@ -27,16 +27,16 @@ public:
 
 		server.begin();
 
-		server.on("/setup",        HTTP_GET,  [this]{ serve_file("/setup.html"); });
+		server.on("/",             HTTP_GET,  [this]{ serve_file("/setup.html"); });
 		server.on("/wifi_setup",   HTTP_POST, [this]{ setup_wifi(); });
 		server.on("/mqtt_setup",   HTTP_POST, [this]{ setup_mqtt(); });
 		server.on("/topic_setup",  HTTP_POST, [this]{ setup_topic(); });
 		server.on("/wifi_status",  HTTP_GET,  [this]{ wifi_status(); });
 		server.on("/mqtt_status",  HTTP_GET,  [this]{ mqtt_status(); });
 		server.on("/readings",     HTTP_GET,  [this]{ get_all_reading_names(); });
-		server.on("/gen_204",      HTTP_GET,  [this]{ redirect("/setup"); });
-		server.on("/generate_204", HTTP_GET,  [this]{ redirect("/setup"); });
-		server.on("/success.txt",  HTTP_GET,  [this]{ redirect("/setup"); });
+		server.on("/gen_204",      HTTP_GET,  [this]{ redirect("/"); });
+		server.on("/generate_204", HTTP_GET,  [this]{ redirect("/"); });
+		server.on("/success.txt",  HTTP_GET,  [this]{ redirect("/"); });
 		server.onNotFound([this]{ serve_file(server.uri()); });
 
 		String ssid, password;
@@ -86,12 +86,13 @@ public:
 		else if (filepath.endsWith(".js")) mime = "text/javascript";
 		else if (filepath.endsWith(".ttf")) mime = "font/ttf";
 
+		filepath = srv_path + filepath;
 		if (LittleFS.exists(filepath)) {
 			File file = LittleFS.open(filepath, "r");
 			server.streamFile(file, mime);
 			file.close();
 		} else {
-			String err = "Error: " + filepath + " not found";
+			String err = "Error: not found";
 			Serial.println(err);
 			server.send(404, "text/html", err);
 		}
@@ -190,6 +191,8 @@ private:
 
 	const String status_ok = "Ok!";
 	const String status_bad = "Błąd!";
+
+	const String srv_path = "/public";
 
 	String mqtt_host;
 	String mqtt_port;
