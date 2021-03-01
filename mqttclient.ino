@@ -11,7 +11,7 @@
 
 class MQTTClient : PubSubClient {
 public:
-	std::vector<Sensor*> sensors;
+	std::map<String, Sensor*> sensors;
 
 	MQTTClient(String ap_ssid, String ap_password) : ap_ssid(ap_ssid), ap_password(ap_password) {}
 
@@ -33,7 +33,7 @@ public:
 		server.on("/topic_setup",  HTTP_POST, [this]{ setup_topic(); });
 		server.on("/wifi_status",  HTTP_GET,  [this]{ wifi_status(); });
 		server.on("/mqtt_status",  HTTP_GET,  [this]{ mqtt_status(); });
-		server.on("/readings",     HTTP_GET,  [this]{ get_all_reading_names(); });
+		server.on("/readings",     HTTP_GET,  [this]{ server.send(200, "text/plain", get_all_reading_names()); });
 		server.on("/gen_204",      HTTP_GET,  [this]{ redirect("/"); });
 		server.on("/generate_204", HTTP_GET,  [this]{ redirect("/"); });
 		server.on("/success.txt",  HTTP_GET,  [this]{ redirect("/"); });
@@ -49,12 +49,13 @@ public:
 			Serial.println("Warning: Waiting for wifi credentials under 172.0.0.1/setup");
 		}
 
-		for (auto& sensor : sensors)
-			sensor->begin();
+		for (auto& pair: sensors)
+			pair.second->begin();
 
-		for (auto& sensor : sensors) {
+		for (auto& pair : sensors) {
+			auto& sensor = pair.second;
 			for (auto& name : sensor->get_available_readings()) {
-				if (config.load_sensor_config(name, sensor->readings[name].topic, sensor->readings[name].interval))
+				if (config.load_sensor_config(pair.first + '/' + name, sensor->readings[name].topic, sensor->readings[name].interval))
 					Serial.printf("%s read successfuly\n", name.c_str());
 			}
 		}
@@ -126,23 +127,27 @@ public:
 	}
 
 	void setup_topic() {
-		for (auto& sensor : sensors) {
-			String reading = server.arg("reading");
-			auto needle = sensor->readings.find(reading);
-			if (needle != sensor->readings.end()) {
-				String topic = server.arg("topic");
-				uint32_t interval = min_to_ms(server.arg("interval").toInt());
-
-				needle->second.topic = topic;
-				needle->second.interval = interval;
-
-				config.save_sensor_config(reading, topic, interval);
-
-				server.send(200, "text/plain", "");
-				return;
-			}
+		// incoming reading is in format <sensor name>/<reading name>
+		String reading = server.arg("reading");
+		if (get_all_reading_names().indexOf(reading) == -1) {
+			server.send(500, "text/plain", "Błąd konfiguracji odczytu!");
+			return;
 		}
-		server.send(500, "text/plain", "Błąd konfiguracji odczytu!");
+
+		int slash_pos = server.arg("reading").indexOf('/');
+		auto sensor_name = reading.substring(0,slash_pos);
+		auto reading_name = reading.substring(slash_pos+1);
+		auto& sensor_reading = sensors[sensor_name]->readings[reading_name];
+
+		String topic = server.arg("topic");
+		uint32_t interval = min_to_ms(server.arg("interval").toInt());
+
+		sensor_reading.topic = topic;
+		sensor_reading.interval = interval;
+
+		config.save_sensor_config(reading, topic, interval);
+
+		server.send(200, "text/plain", "");
 	}
 
 	void wifi_status() {
@@ -153,14 +158,14 @@ public:
 		server.send(200, "text/plain", connected() ? status_ok : status_bad);
 	}
 
-	void get_all_reading_names() {
+	String get_all_reading_names() {
 		String reading_names;
-		for (auto& sensor : sensors) {
-			for (auto& name : sensor->get_available_readings()) {
-				reading_names += name + '\n';
+		for (auto& pair : sensors) {
+			for (auto& name : pair.second->get_available_readings()) {
+				reading_names += pair.first + '/' + name + '\n';
 			}
 		}
-		server.send(200, "text/plain", reading_names);
+		return reading_names;
 	}
 
 	void redirect(String path) {
@@ -174,7 +179,8 @@ public:
 		server.handleClient();
 
 		if (millis() - 5000 > last && mqtt_connect()) {
-			for (auto& sensor : sensors) {
+			for (auto& pair : sensors) {
+				auto& sensor = pair.second;
 				auto readings = sensor->get_readings_to_send();
 				for (auto& reading : readings)
 					publish(reading->second.topic.c_str(), String(sensor->update(reading->first)).c_str());
@@ -240,7 +246,7 @@ void setup() {
 
 	Wire.begin();
 
-	client.sensors.push_back(new BME());
+	client.sensors.insert({"BME", new BME()});
 
 	client.begin();
 }
