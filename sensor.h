@@ -1,6 +1,5 @@
 #include <map>
 #include <vector>
-#include "BME280I2C.h"
 
 
 static auto min_to_ms = [](int t) { return (t < 0) ? 0 : t*60000; };

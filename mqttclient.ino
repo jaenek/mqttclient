@@ -1,10 +1,19 @@
+#include <Wire.h>
+
+#ifdef ESP32
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WiFiAP.h>
+#include <WebServer.h>
+#include <LITTLEFS.h>
+#else
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include <FS.h>
-#include <DNSServer.h>
 #include <LittleFS.h>
+#define LITTLEFS LittleFS
+#endif
+#include <DNSServer.h>
 #include <PubSubClient.h>
-#include <Wire.h>
 
 #include "sensor.h"
 #include "config.h"
@@ -16,9 +25,17 @@ public:
 	MQTTClient(String ap_ssid, String ap_password) : ap_ssid(ap_ssid), ap_password(ap_password) {}
 
 	void begin() {
+		WiFi.disconnect(true);
+		WiFi.mode(WIFI_OFF);
+		delay(1000);
+		WiFi.persistent(false);
+
+		LITTLEFS.begin();
+
 		WiFi.mode(WIFI_AP_STA);
+		WiFi.softAP(ap_ssid.c_str());
+		delay(1000);
 		WiFi.softAPConfig(APIP, APIP, IPAddress(255, 255, 255, 0));
-		WiFi.softAP(ap_ssid, ap_password);
 
 		Serial.print("AP IP address: ");
 		Serial.println(APIP);
@@ -39,10 +56,12 @@ public:
 		server.on("/success.txt",  HTTP_GET,  [this]{ redirect("/"); });
 		server.onNotFound([this]{ serve_file(server.uri()); });
 
-		String ssid, password;
+		String ssid(""), password("");
 		if (config.load_wifi_config(ssid, password)) {
 			Serial.println("Connecting to WiFi");
-			WiFi.begin(ssid, password);
+			WiFi.begin(ssid.c_str(), password.c_str());
+			while (!WiFi.isConnected()) delay(500);
+			Serial.println(WiFi.localIP().toString());
 			config.load_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password);
 			mqtt_connect();
 		} else {
@@ -88,12 +107,12 @@ public:
 		else if (filepath.endsWith(".ttf")) mime = "font/ttf";
 
 		filepath = srv_path + filepath;
-		if (LittleFS.exists(filepath)) {
-			File file = LittleFS.open(filepath, "r");
+		if (LITTLEFS.exists(filepath)) {
+			File file = LITTLEFS.open(filepath, "r");
 			server.streamFile(file, mime);
 			file.close();
 		} else {
-			String err = "Error: not found";
+			const char* err = "Error: not found";
 			Serial.println(err);
 			server.send(404, "text/html", err);
 		}
@@ -108,8 +127,7 @@ public:
 			server.send(400, "text/plain", "Wszystkie pola muszą być wypełnione!");
 
 		config.save_wifi_config(ssid, password);
-
-		WiFi.begin(ssid, password);
+		WiFi.begin(ssid.c_str(), password.c_str());
 	}
 
 	void setup_mqtt() {
@@ -151,7 +169,7 @@ public:
 	}
 
 	void wifi_status() {
-		server.send(200, "text/plain", WiFi.status() == WL_CONNECTED ? status_ok : status_bad);
+		server.send(200, "text/plain", WiFi.isConnected() ? status_ok : status_bad);
 	}
 
 	void mqtt_status() {
@@ -168,10 +186,9 @@ public:
 		return reading_names;
 	}
 
-	void redirect(String path) {
+	void redirect(const char* path) {
 		server.sendHeader("Location", path, true);
 		server.send(302, "text/plain", "");
-		server.client().stop(); // Stop is needed because we sent no content length
 	}
 
 	void loop() {
@@ -189,7 +206,7 @@ public:
 		}
 	}
 private:
-	IPAddress APIP{172, 0, 0, 1};
+	IPAddress APIP{8, 8, 4, 4};
 
 	const String ap_ssid;
 	const String ap_password;
@@ -204,14 +221,20 @@ private:
 	String mqtt_username;
 	String mqtt_password;
 
-	uint32_t last = 0;
+	uint32_t last = millis();
 
 	DNSServer dnsServer;
-	ESP8266WebServer server{80};
 	WiFiClient wifi_client;
+	#ifdef ESP32
+	WebServer server{80};
+	#else
+	ESP8266WebServer server{80};
+	#endif
 
 	Config config;
 } client("Czujnik", "password123");
+
+#include "BME280I2C.h"
 
 class BME : public Sensor {
 	void begin() override {
@@ -238,11 +261,30 @@ class BME : public Sensor {
 	BME280::PresUnit pressure_unit{BME280::PresUnit_Pa};
 };
 
+class Current : public Sensor {
+public:
+	Current(uint8_t pin) : analog_pin(pin) {}
+
+private:
+	void begin() override {
+		pinMode(analog_pin, INPUT);
+		set_available_readings({"current"});
+	}
+
+	float update(const String& reading_name) override {
+		if (reading_name == "current") {
+			float current = 0.0f;
+			return analogRead(analog_pin);
+		}
+		return 0.0f;
+	}
+
+	uint8_t analog_pin;
+};
+
 void setup() {
 	Serial.begin(9600);
 	while (!Serial);
-
-	LittleFS.begin();
 
 	Wire.begin();
 
