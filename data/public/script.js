@@ -1,11 +1,6 @@
-const wifi_status = document.getElementById('wifi_status');
 const mqtt_status = document.getElementById('mqtt_status');
 
 function get_status() {
-    fetch('/wifi_status').then(res => res.text()).then(body => {
-	wifi_status.innerHTML = body;
-    });
-
     fetch('/mqtt_status').then(res => res.text()).then(body => {
 	mqtt_status.innerHTML = body;
     });
@@ -27,34 +22,15 @@ function submit(url, form) {
 	});
 }
 
-const wifi_form = document.getElementById('wifi_form');
 const mqtt_form = document.getElementById('mqtt_form');
 const topic_form = document.getElementById('topic_form');
-const submit_wifi = document.getElementById('submit_wifi');
 const submit_mqtt = document.getElementById('submit_mqtt');
 const submit_topic = document.getElementById('submit_topic');
 const loader = document.getElementById('loader');
 const result = document.getElementById('result');
 
-function set_view(view) {
-	if (view == 'wifi') {
-		mqtt_form.style.display = 'none';
-		topic_form.style.display = 'none';
-		wifi_form.style.display = 'grid';
-	} else if (view == 'mqtt') {
-		wifi_form.style.display = 'none';
-		mqtt_form.style.display = 'grid';
-		topic_form.style.display = 'grid';
-	}
-}
-
-wifi_status.parentNode.onclick = function() { set_view('wifi') };
-mqtt_status.parentNode.onclick = function() { set_view('mqtt') };
-submit_wifi.onclick = function() { submit('/wifi_setup', wifi_form) };
 submit_mqtt.onclick = function() { submit('/mqtt_setup', mqtt_form) };
 submit_topic.onclick = function() { submit('/topic_setup', topic_form) };
-
-set_view('mqtt');
 
 const readings = document.getElementById('readings');
 

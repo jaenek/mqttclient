@@ -38,10 +38,6 @@ label {
 	text-align: right;
 }
 
-#mqtt_form {
-	display: none;
-}
-
 input[type=button] {
 	grid-column: 2;
 	margin-left: auto;

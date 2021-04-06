@@ -3,7 +3,7 @@
 #include "mqttclient.h"
 #include "BME280I2C.h"
 
-MQTTClient client("Czujnik", "");
+MQTTClient client;
 
 class BME : public Sensor {
 	void begin() override {
