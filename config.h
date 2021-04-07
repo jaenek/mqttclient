@@ -51,6 +51,10 @@ public:
 		return true;
 	}
 
+	void remove_sensor_config(const String& sensor_config) {
+		LITTLEFS.remove(sensors_config_folder+sensor_config);
+	}
+
 private:
 	const String wifi_config = "/config/wifi_config";
 	const String mqtt_config = "/config/mqtt_config";
