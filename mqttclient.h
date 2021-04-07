@@ -49,6 +49,8 @@ public:
 		server.on("/wifi_status",  HTTP_GET,  [this]{ wifi_status(); });
 		server.on("/mqtt_status",  HTTP_GET,  [this]{ mqtt_status(); });
 		server.on("/readings",     HTTP_GET,  [this]{ server.send(200, "text/plain", get_all_reading_names()); });
+		server.on("/configs",      HTTP_GET,  [this]{ server.send(200, "text/plain", get_reading_configs()); });
+		server.on("/delete",       HTTP_POST, [this]{ delete_config(); });
 		server.on("/gen_204",      HTTP_GET,  [this]{ redirect("/"); });
 		server.on("/generate_204", HTTP_GET,  [this]{ redirect("/"); });
 		server.on("/success.txt",  HTTP_GET,  [this]{ redirect("/"); });
@@ -60,8 +62,9 @@ public:
 			WiFi.begin(ssid.c_str(), password.c_str());
 			while (!WiFi.isConnected()) delay(500);
 			Serial.println(WiFi.localIP().toString());
-			config.load_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password);
-			mqtt_connect();
+
+			if (config.load_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password))
+				mqtt_reconnect();
 		} else {
 			Serial.println("Warning: Waiting for wifi credentials under 172.0.0.1/setup");
 		}
@@ -69,19 +72,10 @@ public:
 		for (auto& pair: sensors)
 			pair.second->begin();
 
-		for (auto& pair : sensors) {
-			auto& sensor = pair.second;
-			for (auto& name : sensor->get_available_readings()) {
-				if (config.load_sensor_config(pair.first + '/' + name, sensor->readings[name].topic, sensor->readings[name].interval))
-					Serial.printf("%s read successfuly\n", name.c_str());
-			}
-		}
+		Serial.print(get_reading_configs());
 	}
 
-	bool mqtt_connect() {
-		if (connected())
-			return true;
-
+	bool mqtt_reconnect() {
 		IPAddress ip;
 
 		if (ip.fromString(mqtt_host.c_str()))
@@ -90,6 +84,8 @@ public:
 			setServer(mqtt_host.c_str(), mqtt_port.toInt());
 
 		setClient(wifi_client);
+
+		setKeepAlive(true);
 
 		if (mqtt_username != "" && mqtt_password != "")
 			return connect("Czujnik", mqtt_username.c_str(), mqtt_password.c_str());
@@ -134,7 +130,7 @@ public:
 		mqtt_username = server.arg("username");
 		mqtt_password = server.arg("password");
 
-		if (mqtt_connect()) {
+		if (mqtt_reconnect()) {
 			config.save_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password);
 			server.send(200, "text/plain", "");
 		} else {
@@ -189,18 +185,52 @@ public:
 		server.send(302, "text/plain", "");
 	}
 
+	String get_reading_configs() {
+		String reading_configs;
+		for (auto& pair : sensors) {
+			auto& sensor = pair.second;
+			for (auto& name : sensor->get_available_readings()) {
+				String reading_name = pair.first + '/' + name;
+				sensor->readings[name].topic = "";
+				if (config.load_sensor_config(reading_name, sensor->readings[name].topic, sensor->readings[name].interval))
+					reading_configs += reading_name + ',' + sensor->readings[name].topic + ',' + ms_to_min(sensor->readings[name].interval) + '\n';
+			}
+		}
+		return reading_configs;
+	}
+
+	void delete_config() {
+		for (auto& pair : sensors) {
+			for (auto& name : pair.second->get_available_readings()) {
+				String reading_name = pair.first + '/' + name;
+				if (server.hasArg(reading_name)) {
+					config.remove_sensor_config(reading_name);
+					server.send(200, "text/plain", "");
+					return;
+				}
+			}
+		}
+		server.send(500, "text/plain", "Błąd usuwania!");
+	}
+
 	void loop() {
 		dnsServer.processNextRequest();
 		server.handleClient();
 
-		if (millis() - 5000 > last && mqtt_connect()) {
+		long now = millis();
+		if (now - 5000 > last_reading_sent && connected()) {
 			for (auto& pair : sensors) {
 				auto& sensor = pair.second;
 				auto readings = sensor->get_readings_to_send();
 				for (auto& reading : readings)
 					publish(reading->second.topic.c_str(), String(sensor->update(reading->first)).c_str());
 			}
-			last = millis();
+			last_reading_sent = now;
+		} else if (!connected()) {
+			if (now - last_reconnect_attempt > 5000) {
+				last_reconnect_attempt = now;
+				if (mqtt_reconnect()) last_reconnect_attempt = 0;
+			}
 		}
 	}
 private:
@@ -219,7 +249,8 @@ private:
 	String mqtt_username;
 	String mqtt_password;
 
-	uint32_t last = millis();
+	uint32_t last_reading_sent;
+	uint32_t last_reconnect_attempt;
 
 	DNSServer dnsServer;
 	WiFiClient wifi_client;
