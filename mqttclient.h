@@ -206,7 +206,6 @@ public:
 				if (server.hasArg(reading_name)) {
 					config.remove_sensor_config(reading_name);
 					server.send(200, "text/plain", "");
-					return;
 				}
 			}
 		}
