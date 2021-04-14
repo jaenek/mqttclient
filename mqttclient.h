@@ -39,9 +39,8 @@ public:
 		if (config.load_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password)) {
 			mqtt_reconnect();
 		} else {
-			Serial.print("Warning: Waiting for mqtt configuration under");
-			Serial.print(Ethernet.localIP());
-			Serial.println("/setup");
+			Serial.print("Warning: Waiting for mqtt configuration under http://");
+			Serial.println(Ethernet.localIP());
 		}
 
 		for (auto& pair: sensors)
@@ -192,11 +191,6 @@ public:
 	}
 private:
 	uint8_t ethernet_mac[6] = { 0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x02 };
-
-	IPAddress APIP{8, 8, 4, 4};
-
-	const String ap_ssid;
-	const String ap_password;
 
 	const String status_ok = "Ok!";
 	const String status_bad = "Błąd!";
