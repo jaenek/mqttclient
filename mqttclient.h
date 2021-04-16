@@ -50,6 +50,9 @@ public:
 	}
 
 	bool mqtt_reconnect() {
+		if (mqtt_host == "")
+			return false;
+
 		IPAddress ip;
 
 		if (ip.fromString(mqtt_host.c_str()))
@@ -173,19 +176,19 @@ public:
 	void loop() {
 		server.handleClient();
 
-		long now = millis();
-		if (now - 5000 > last_reading_sent && connected()) {
-			for (auto& pair : sensors) {
-				auto& sensor = pair.second;
-				auto readings = sensor->get_readings_to_send();
-				for (auto& reading : readings)
-					publish(reading->second.topic.c_str(), String(sensor->update(reading->first)).c_str());
-			}
-			last_reading_sent = now;
-		} else if (!connected()) {
-			if (now - last_reconnect_attempt > 5000) {
-				last_reconnect_attempt = now;
-				if (mqtt_reconnect()) last_reconnect_attempt = 0;
+		int now = millis();
+		if (now - last_action > 5000) {
+			if (connected()) {
+				for (auto& pair : sensors) {
+					auto& sensor = pair.second;
+					auto readings = sensor->get_readings_to_send();
+					for (auto& reading : readings)
+						publish(reading->second.topic.c_str(), String(sensor->update(reading->first)).c_str());
+				}
+				last_action = now;
+			} else {
+				last_action = now;
+				if (mqtt_reconnect()) last_action = 0;
 			}
 		}
 	}
@@ -202,8 +205,7 @@ private:
 	String mqtt_username;
 	String mqtt_password;
 
-	uint32_t last_reading_sent;
-	uint32_t last_reconnect_attempt;
+	int last_action;
 
 	EthernetClient ethernet_client;
 	EthernetWebServer server{80};
