@@ -1,15 +1,14 @@
-const mqtt_status = document.getElementById('mqtt_status');
 const loader = document.getElementById('loader');
 
 function get_status() {
-    fetch('/mqtt_status').then(res => res.text()).then(body => {
-	mqtt_status.innerHTML = body;
-    });
+	fetch('/mqtt_status').then(res => res.text()).then(body => {
+		document.getElementById('mqtt_status').innerHTML = body;
+	});
 }
 
-setInterval(get_status, 5000);
+document.getElementsByTagName('nav')[0].addEventListener('click', get_status, false);
 
-function submit(url, form) {
+function submit(url, form, done) {
 	loader.style.display = 'block';
 
 	let init = {
@@ -20,16 +19,17 @@ function submit(url, form) {
 	fetch(url, init).then(res => res.text()).then(text => {
 		loader.style.display = 'none';
 		document.getElementById('result').innerHTML = text;
+		get_status();
+		setTimeout(500, done());
 	});
 }
 
 document.getElementById('submit_mqtt').onclick = function() {
-	submit('/mqtt_setup', document.getElementById('mqtt_form'))
+	submit('/mqtt_setup', document.getElementById('mqtt_form'), () => {})
 };
 
 document.getElementById('submit_topic').onclick = function() {
-	submit('/topic_setup', document.getElementById('topic_form'));
-	setup_configs();
+	submit('/topic_setup', document.getElementById('topic_form'), setup_configs);
 };
 
 fetch('/readings').then(res => res.text()).then(body => {
