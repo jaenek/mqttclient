@@ -1,6 +1,6 @@
-#include <SPI.h>
-#include <Ethernet2.h>
 #include <LittleFS.h>
+#include <Ethernet2.h>
+#define USE_ETHERNET2 true
 #include <EthernetWebServer.h>
 #include <PubSubClient.h>
 
@@ -19,6 +19,9 @@ public:
 			Serial.print("Error: Hardware not detected or link is down!");
 			delay(3000);
 		}
+
+		Serial.print("Assigned IP: ");
+		Serial.println(Ethernet.localIP());
 
 		LITTLEFS.begin();
 
@@ -39,9 +42,10 @@ public:
 		if (config.load_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password)) {
 			mqtt_reconnect();
 		} else {
-			Serial.print("Warning: Waiting for mqtt configuration under http://");
-			Serial.println(Ethernet.localIP());
+			Serial.print("Warning: Waiting for mqtt configuration.");
 		}
+
+		delay(1000);
 
 		for (auto& pair: sensors)
 			pair.second->begin();
