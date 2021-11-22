@@ -65,8 +65,8 @@ public:
 			setServer(mqtt_host.c_str(), mqtt_port.toInt());
 
 		setClient(ethernet_client);
-
-		setKeepAlive(true);
+		setKeepAlive(60);
+		setSocketTimeout(5);
 
 		if (mqtt_username != "" && mqtt_password != "")
 			return connect("MQTTClient", mqtt_username.c_str(), mqtt_password.c_str());
@@ -190,7 +190,7 @@ public:
 						publish(reading->second.topic.c_str(), String(sensor->update(reading->first)).c_str());
 				}
 				last_action = now;
-			} else {
+			} else if (now - last_action > 60000) {
 				last_action = now;
 				if (mqtt_reconnect()) last_action = 0;
 			}
