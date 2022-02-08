@@ -16,7 +16,7 @@ clean:
 
 $(DIR):
 	@mkdir -pv $@
-	@arduino-cli compile -b $(FQBN)$(BPRP)
+	@arduino-cli compile -b $(FQBN)$(BPRP) --build-property "compiler.cpp.extra_flags=\"-DUSE_HARDWARESERIAL=1\""
 	@arduino-cli upload -b $(FQBN)$(BRPR) -p $(PORT)
 
 uploadfs: $(DIR)/data.bin

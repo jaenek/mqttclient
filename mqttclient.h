@@ -16,12 +16,12 @@ public:
 	void begin() {
 		Ethernet.init(D3);
 		while (Ethernet.begin(ethernet_mac) == 0) {
-			Serial.print("Error: Hardware not detected or link is down!");
+			SERIAL.print("Error: Hardware not detected or link is down!");
 			delay(3000);
 		}
-
-		Serial.print("Assigned IP: ");
-		Serial.println(Ethernet.localIP());
+		//Ethernet.begin(ethernet_mac, IPAddress(172, 17, 0, 108));
+		SERIAL.print("Assigned IP: ");
+		SERIAL.println(Ethernet.localIP());
 
 		LITTLEFS.begin();
 
@@ -42,7 +42,7 @@ public:
 		if (config.load_mqtt_config(mqtt_host, mqtt_port, mqtt_username, mqtt_password)) {
 			mqtt_reconnect();
 		} else {
-			Serial.print("Warning: Waiting for mqtt configuration.");
+			SERIAL.print("Warning: Waiting for mqtt configuration.");
 		}
 
 		delay(1000);
@@ -50,7 +50,7 @@ public:
 		for (auto& pair: sensors)
 			pair.second->begin();
 
-		Serial.print(get_reading_configs());
+		SERIAL.print(get_reading_configs());
 	}
 
 	bool mqtt_reconnect() {
@@ -88,7 +88,7 @@ public:
 			file.close();
 		} else {
 			const char* err = "Error: not found";
-			Serial.println(err);
+			SERIAL.println(err);
 			server.send(404, "text/html", err);
 		}
 	}

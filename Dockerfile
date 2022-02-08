@@ -6,6 +6,7 @@ RUN git clone https://github.com/khoih-prog/Ethernet2 ~/Arduino/libraries/Ethern
 RUN git clone https://github.com/khoih-prog/EthernetWebServer ~/Arduino/libraries/EthernetWebServer
 RUN git clone https://github.com/knolleary/pubsubclient/ ~/Arduino/libraries/pubsubclient
 RUN git clone https://github.com/finitespace/BME280 ~/Arduino/libraries/BME280
+RUN git clone https://github.com/reaper7/SDM_Energy_Meter ~/Arduino/libraries/SDM_Energy_Meter
 
 COPY . /mqttclient
 WORKDIR "/mqttclient"
